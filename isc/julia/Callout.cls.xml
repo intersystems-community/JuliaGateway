@@ -1,0 +1,196 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Export generator="Cache" version="25">
+<Class name="isc.julia.Callout">
+<Description>
+Raw callout wrapper. Use isc.py.Main
+To use:
+1. Call: do ##class(isc.julia.Callout).Setup() once per systems start
+2. Call main method (can be called many times, context persists): write ##class(isc.julia.Callout).SimpleString(code, variable)
+3. Call: do ##class(isc.julia.Callout).Finalize() to clear Python context
+4. Call: write ##class(isc.julia.Callout).Unload() to free callout library</Description>
+<TimeCreated>64999,79099.918213</TimeCreated>
+
+<Parameter name="SerializationStr">
+<Description>
+Serialization by str() function</Description>
+<Default>0</Default>
+</Parameter>
+
+<Parameter name="SerializationRepr">
+<Description>
+Serialization by repr() function</Description>
+<Default>1</Default>
+</Parameter>
+
+<Parameter name="JuliaLibId">
+<Type>Integer</Type>
+<Default>4938</Default>
+</Parameter>
+
+<Parameter name="Initialize">
+<Type>Integer</Type>
+<Default>1</Default>
+</Parameter>
+
+<Parameter name="Finalize">
+<Type>Integer</Type>
+<Default>2</Default>
+</Parameter>
+
+<Parameter name="SimpleString">
+<Type>Integer</Type>
+<Default>3</Default>
+</Parameter>
+
+<Parameter name="SimpleExecute">
+<Type>Integer</Type>
+<Default>4</Default>
+</Parameter>
+
+<Method name="GetLib">
+<Description>
+Get path to the shared library file. 
+Library file is assumed to be in a bin folder, unless specified otherwise in ^isc.julia.Callout global.
+write ##class(isc.julia.Callout).GetLib()</Description>
+<ClassMethod>1</ClassMethod>
+<CodeMode>expression</CodeMode>
+<Implementation><![CDATA[$g(^isc.julia.Callout, $g(^%SYS("bindir")) _ "iscjulia." _ $select($$$isWINDOWS:"dll", $$$isMACOSX:"dylib", 1:"so"))
+]]></Implementation>
+</Method>
+
+<Method name="Setup">
+<Description>
+Should be executed once per system start. Idempotent.
+Add to ZSTART or production start.
+write ##class(isc.julia.Callout).Setup()</Description>
+<ClassMethod>1</ClassMethod>
+<ReturnType>%Status</ReturnType>
+<Implementation><![CDATA[
+	#dim sc As %Status = $$$OK
+	set file = ..GetLib()
+	quit:'##class(%File).Exists(file) $$$ERROR($$$GeneralError, "Library file: " _ file _ " does not exist")	
+
+	try {
+		set result = $ZF(-4,6,..#JuliaLibId)
+		if result'=0 {
+			set sc = $$$ERROR($$$GeneralError, "Failed $ZF(-4, 6,..#JuliaLibId) call with result: " _ result _ " expected 0")
+			quit
+		}
+		
+		set result =$ZF(-4,5,..#JuliaLibId, file)
+		if result'=0 {
+			set sc = $$$ERROR($$$GeneralError, "Failed $ZF(-4, 5,..GetLib()) call with result: " _ result _ " expected 0")
+			quit
+		}
+	} catch ex {
+		set sc = ex.AsStatus()
+	}
+	
+	
+    quit sc
+]]></Implementation>
+</Method>
+
+<Method name="Initialize">
+<Description>
+Initializes Python environment. Idempotent.
+Currently this is done automatically on a C side of things.
+file - path to a Python shared library. (Linux only, optional)
+Due to the problems with lib-dynload, sometimes library file should be loaded explicitly on Linux
+For more info see: https://bugs.python.org/issue4434
+Do not use it, unless you get errors like: undefined symbol: _Py_TrueStruct and so on
+w ##class(isc.julia.Callout).Initialize()
+In cause of problems: do ##class(isc.julia.Callout).Initialize("libpython3.6m.so") </Description>
+<ClassMethod>1</ClassMethod>
+<FormalSpec>file:%String=""</FormalSpec>
+<ReturnType>%Status</ReturnType>
+<Implementation><![CDATA[
+	#dim sc As %Status = $$$OK
+	try {
+		do $ZF(-6, ..#JuliaLibId, ..#Initialize, file)
+	} catch ex {
+		set sc = ex.AsStatus()
+	}
+	quit sc
+]]></Implementation>
+</Method>
+
+<Method name="SimpleExecute">
+<Description>
+Eval code vaiable in initialized context and 
+return value of variable str evaluation
+serialization - currenlty: 0 - string serialization, 1 - repr serialization.
+TODO determine wide variable value.
+do ##class(isc.julia.Callout).SimpleExecute()</Description>
+<ClassMethod>1</ClassMethod>
+<FormalSpec>code:%String="x=1",variable:%String="string(x)"</FormalSpec>
+<ReturnType>%String</ReturnType>
+<Implementation><![CDATA[
+	set:$ZISWIDE(code) code = $zcvt(code, "O", "UTF8")
+	set result = $ZF(-6, ..#JuliaLibId, ..#SimpleExecute, code, variable)
+	
+	// Slows getting result by ~50%
+	set result = $zcvt(result, "I", "UTF8")
+	quit result
+]]></Implementation>
+</Method>
+
+<Method name="SimpleString">
+<Description>
+Eval code vaiable in initialized context and 
+return value of variable str evaluation
+serialization - currenlty: 0 - string serialization, 1 - repr serialization.
+TODO determine wide variable value.
+write ##class(isc.julia.Callout).SimpleString()</Description>
+<ClassMethod>1</ClassMethod>
+<FormalSpec>code:%String="x=sqrt(2)",variable:%String="string(x)"</FormalSpec>
+<ReturnType>%String</ReturnType>
+<Implementation><![CDATA[
+	set:$ZISWIDE(code) code = $zcvt(code, "O", "UTF8")
+	set result = $ZF(-6, ..#JuliaLibId, ..#SimpleString, code, variable)
+	
+	// Slows getting result by ~50%
+	set result = $zcvt(result, "I", "UTF8")
+	quit result
+]]></Implementation>
+</Method>
+
+<Method name="Finalize">
+<Description>
+Finalize Python. Idempotent.
+write ##class(isc.julia.Callout).Finalize()</Description>
+<ClassMethod>1</ClassMethod>
+<ReturnType>%Status</ReturnType>
+<Implementation><![CDATA[
+	#dim sc As %Status = $$$OK
+	try {
+		do $ZF(-6, ..#JuliaLibId, ..#Finalize)
+	} catch ex {
+		#dim ex As %Exception.General
+		set sc = ex.AsStatus()
+	}
+	quit sc
+]]></Implementation>
+</Method>
+
+<Method name="Unload">
+<Description>
+Unload library. Idempotent.
+write ##class(isc.julia.Callout).Unload()</Description>
+<ClassMethod>1</ClassMethod>
+<ReturnType>%Status</ReturnType>
+<Implementation><![CDATA[
+	#dim sc As %Status = $$$OK
+	
+	try {
+		set result = $ZF(-4, 4, ..#JuliaLibId)
+		set:result'=0 sc = $$$ERROR($$$GeneralError, "Failed $ZF(-4, 4,..#JuliaLibId) call with result: " _ result _ " expected 0")
+	} catch ex {
+		set sc = ex.AsStatus()
+	}
+
+	quit sc
+]]></Implementation>
+</Method>
+</Class>
+</Export>
