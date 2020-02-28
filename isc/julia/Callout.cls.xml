@@ -143,15 +143,29 @@ serialization - currenlty: 0 - string serialization, 1 - repr serialization.
 TODO determine wide variable value.
 write ##class(isc.julia.Callout).SimpleString()</Description>
 <ClassMethod>1</ClassMethod>
-<FormalSpec>code:%String="x=sqrt(2)",variable:%String="string(x)"</FormalSpec>
+<FormalSpec>code:%String="x=sqrt(2)"</FormalSpec>
 <ReturnType>%String</ReturnType>
 <Implementation><![CDATA[
 	set:$ZISWIDE(code) code = $zcvt(code, "O", "UTF8")
-	set result = $ZF(-6, ..#JuliaLibId, ..#SimpleString, code, variable)
+	set result = $ZF(-6, ..#JuliaLibId, ..#SimpleString, code)
 	
 	// Slows getting result by ~50%
 	set result = $zcvt(result, "I", "UTF8")
 	quit result
+]]></Implementation>
+</Method>
+
+<Method name="Test">
+<Description>
+d ##class(isc.julia.Callout).Test()</Description>
+<ClassMethod>1</ClassMethod>
+<Implementation><![CDATA[
+	set code = $lts($lb("try", "using DataFrames", "df = DataFrame(A = 1:4, B = 'A':'D')", "catch e", "bt = backtrace()", "msg = sprint(showerror, e, bt)", "end"), $$$NL)
+	write ##class(isc.julia.Callout).SimpleString(code)
+	
+	set code = $lts($lb("try",  "string(df)", "catch e", "bt = backtrace()", "msg = sprint(showerror, e, bt)", "end"), $$$NL)
+
+	write $replace(##class(isc.julia.Callout).SimpleString(code),$c(10),$$$NL)
 ]]></Implementation>
 </Method>
 

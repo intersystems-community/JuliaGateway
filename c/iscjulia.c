@@ -43,7 +43,7 @@ int Finalize() {
 // Execute simple command.
 // Initializes environment if required
 // Does not finalize the environment.
-int SimpleString(CACHE_EXSTRP command, char *resultVar, CACHE_EXSTRP result) {
+int SimpleString(CACHE_EXSTRP command, CACHE_EXSTRP result) {
 
 	if (jl_is_initialized() == false) {
 		Initialize(NULL);
@@ -54,15 +54,12 @@ int SimpleString(CACHE_EXSTRP command, char *resultVar, CACHE_EXSTRP result) {
 	memcpy(commandChar, command->str.ch,  command->len);
 	memcpy(commandChar + command->len, "\0", 1);
 
-	jl_eval_string(commandChar);
+	jl_value_t *var = jl_eval_string(commandChar);
 
 	CACHEEXSTRKILL(command);
 	free(commandChar);
 
-
-	jl_value_t *var = jl_eval_string(resultVar);
-	//jl_value_t *var = jl_get_global(jl_main_module, resultVar);
-	if (var && (resultVar != NULL) && (resultVar[0] != '\0')) {
+	if (var && jl_is_string(var)) {
 		const char *str = jl_string_ptr(var);
 
 		int len = strlen(str);
@@ -100,6 +97,6 @@ int SimpleExecute(char *command, char *resultVar, char* result) {
 ZFBEGIN
 	ZFENTRY("Initialize","c",Initialize)
 	ZFENTRY("Finalize","",Finalize)
-	ZFENTRY("SimpleString","jcJ",SimpleString)
+	ZFENTRY("SimpleString","jJ",SimpleString)
 	ZFENTRY("SimpleExecute","ccC",SimpleExecute)
 ZFEND
