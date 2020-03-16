@@ -6,7 +6,7 @@
 #include <cdzf.h>
 #include <stdbool.h>
 
-/*
+
 // Pointer to incoming code to execute
 char* inStream = NULL;
 
@@ -15,9 +15,6 @@ int curpos = 0;
 
 // Size of inStream pointer
 int maxpos = 0;
-
-// Haldle for a library if we want to load it explicitly
-void *libHandle = NULL;*/
 
 // Initializes Python environment
 // and obtains reference to the main module.
@@ -65,7 +62,8 @@ int SimpleString(CACHE_EXSTRP command, CACHE_EXSTRP result) {
 		if (jl_is_string(var)) {
 			str = jl_string_ptr(var);
 		} else if (jl_isa(var, jl_char_type)) {
-			str = jl_string_ptr(var);
+			uint32_t ch = *(uint32_t*)var >> 24;
+			sprintf(str,"%c", ch);
 		} else if (jl_is_bool(var)) {
 			int8_t val = jl_unbox_bool(var);
 			sprintf(str, "%d", val);
@@ -103,23 +101,74 @@ int SimpleString(CACHE_EXSTRP command, CACHE_EXSTRP result) {
 }
 
 
-// Assumes initialized environment
-int SimpleExecute(char *command, char *resultVar, char* result) {
+// Init incoming stream (inStream) to length bytes + 1
+int StreamInit(int length)
+{
+	// Free previous stream, if any.
+	if (inStream) {
+		free(inStream);
+		inStream = NULL;
+	}
 
+	// Allocate stream
+	inStream = calloc(length + 1, sizeof(char));
+	curpos = 0;
+	maxpos = length;
+
+	// Return failure if allocation failed
+	if (!inStream) {
+		return ZF_FAILURE;
+	}
+
+	return ZF_SUCCESS;
+}
+
+// Write piece of inStream
+int StreamWrite(CACHE_EXSTRP command)
+{
+	// Stream should be initiate first
+	if (!inStream) {
+		return ZF_FAILURE;
+	}
+
+	// We want to write more bytes, then available.
+	// Need to extend the pointer first
+	if ((int)command->len + curpos > maxpos) {
+		maxpos = (int)command->len + curpos + 1;
+		char *inStreamTemp = realloc(inStream, maxpos);
+
+		if (inStreamTemp) {
+			inStream = inStreamTemp;
+			memset(inStream + curpos, '0', maxpos - curpos);
+		} else {
+			// Reallocation failed
+			return ZF_FAILURE;
+		}
+	}
+
+	memcpy(inStream + curpos, command->str.ch,  command->len);
+	curpos += command->len;
+	return ZF_SUCCESS;
+}
+
+// Send inStream to Python and free it
+int StreamExecute()
+{
 	if (jl_is_initialized() == false) {
 		Initialize(NULL);
 	}
-	jl_eval_string(command);
-	
 
-	jl_value_t *var = jl_eval_string(resultVar);
-	//jl_value_t *var = jl_get_global(jl_base_module, resultVar);
+	if (!inStream) {
+		return ZF_FAILURE;
+	}
 
-	const char *str = jl_string_ptr(var);
+	memcpy(inStream + curpos, "\0", 1);
 
-	sprintf(result, "%s", str);
+	jl_eval_string(inStream);
+	free(inStream);
+	inStream = NULL;
+	curpos = 0;
 
-	
 	return ZF_SUCCESS;
 }
 
@@ -127,5 +176,7 @@ ZFBEGIN
 	ZFENTRY("Initialize","c",Initialize)
 	ZFENTRY("Finalize","",Finalize)
 	ZFENTRY("SimpleString","jJ",SimpleString)
-	ZFENTRY("SimpleExecute","ccC",SimpleExecute)
+	ZFENTRY("StreamInit","i",StreamInit)
+	ZFENTRY("StreamWrite","j",StreamWrite)
+	ZFENTRY("StreamExecute","",StreamExecute)
 ZFEND

@@ -21,7 +21,11 @@ Parameter Finalize As Integer = 2;
 
 Parameter SimpleString As Integer = 3;
 
-Parameter SimpleExecute As Integer = 4;
+Parameter StreamInit As Integer = 4;
+
+Parameter StreamWrite As Integer = 5;
+
+Parameter StreamExecute As Integer = 6;
 
 /// Get path to the shared library file. 
 /// Library file is assumed to be in a bin folder, unless specified otherwise in ^isc.julia.Callout global.
@@ -83,21 +87,6 @@ ClassMethod Initialize(file As %String = "") As %Status
 /// return value of variable str evaluation
 /// serialization - currenlty: 0 - string serialization, 1 - repr serialization.
 /// TODO determine wide variable value.
-/// do ##class(isc.julia.Callout).SimpleExecute()
-ClassMethod SimpleExecute(code As %String = "x=1", variable As %String = "string(x)") As %String
-{
-	set:$ZISWIDE(code) code = $zcvt(code, "O", "UTF8")
-	set result = $ZF(-6, ..#JuliaLibId, ..#SimpleExecute, code, variable)
-	
-	// Slows getting result by ~50%
-	set result = $zcvt(result, "I", "UTF8")
-	quit result
-}
-
-/// Eval code vaiable in initialized context and 
-/// return value of variable str evaluation
-/// serialization - currenlty: 0 - string serialization, 1 - repr serialization.
-/// TODO determine wide variable value.
 /// write ##class(isc.julia.Callout).SimpleString()
 ClassMethod SimpleString(code As %String = "x=sqrt(2)") As %String
 {
@@ -107,6 +96,65 @@ ClassMethod SimpleString(code As %String = "x=sqrt(2)") As %String
 	// Slows getting result by ~50%
 	set result = $zcvt(result, "I", "UTF8")
 	quit result
+}
+
+/// Init incoming Stream
+/// write ##class(isc.julia.Callout).StreamInit()
+ClassMethod StreamInit(length As %Integer = 32000) As %Status
+{
+	#dim sc As %Status = $$$OK
+	try {
+		do $ZF(-6, ..#JuliaLibId, ..#StreamInit, length)
+	} catch ex {
+		#dim ex As %Exception.General
+		if (ex.Name = "<FUNCTION>") {
+			set sc = $$$ERROR($$$GeneralError, "Unable to allocate memory")
+		} else {
+			set sc = ex.AsStatus()
+		}
+	}
+	
+	quit sc
+}
+
+/// Write piece into incoming Stream.
+/// If initial length is not enough, additional allocation is performed.
+/// write ##class(isc.julia.Callout).StreamWrite()
+ClassMethod StreamWrite(code As %String = "") As %Status
+{
+	#dim sc As %Status = $$$OK
+	try {
+		set:$ZISWIDE(code) code = $zcvt(code, "O", "UTF8")
+		do $ZF(-6, ..#JuliaLibId, ..#StreamWrite, code)
+	} catch ex {
+		#dim ex As %Exception.General
+		if (ex.Name = "<FUNCTION>") {
+			set sc = $$$ERROR($$$GeneralError, "Call StreamInit before calling StreamWrite. Or reallocation failed as initial allocation in StreamInit could not hold all the data.")
+		} else {
+			set sc = ex.AsStatus()
+		}
+	}
+	
+	quit sc
+}
+
+/// Send incoming stream to Python for execution and free it.
+/// write ##class(isc.julia.Callout).StreamExecute()
+ClassMethod StreamExecute() As %Status
+{
+	#dim sc As %Status = $$$OK
+	try {
+		do $ZF(-6, ..#JuliaLibId, ..#StreamExecute)
+	} catch ex {
+		#dim ex As %Exception.General
+		if (ex.Name = "<FUNCTION>") {
+			set sc = $$$ERROR($$$GeneralError, "Call StreamInit and StreamWrite before calling StreamExecute")
+		} else {
+			set sc = ex.AsStatus()
+		}
+	}
+	
+	quit sc
 }
 
 /// d ##class(isc.julia.Callout).Test()
