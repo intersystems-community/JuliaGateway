@@ -59,8 +59,37 @@ int SimpleString(CACHE_EXSTRP command, CACHE_EXSTRP result) {
 	CACHEEXSTRKILL(command);
 	free(commandChar);
 
-	if (var && jl_is_string(var)) {
-		const char *str = jl_string_ptr(var);
+	if (var) {
+		char *str = malloc(100);
+
+		if (jl_is_string(var)) {
+			str = jl_string_ptr(var);
+		} else if (jl_isa(var, jl_char_type)) {
+			str = jl_string_ptr(var);
+		} else if (jl_is_bool(var)) {
+			int8_t val = jl_unbox_bool(var);
+			sprintf(str, "%d", val);
+		} else if (jl_is_int8(var)) {
+			int8_t val = jl_unbox_int8(var);
+			sprintf(str, "%d", val);
+		} else if (jl_is_int16(var)) {
+			int16_t val = jl_unbox_int16(var);
+			sprintf(str, "%d", val);
+		} else if (jl_is_int32(var)) {
+			int32_t val = jl_unbox_int32(var);
+			sprintf(str, "%d", val);
+		} else if (jl_is_int64(var)) {
+			int64_t val = jl_unbox_int64(var);
+			sprintf(str, "%lld", val);
+		} else if (jl_isa(var, jl_float32_type)) {
+			float val = jl_unbox_float32(var);
+			sprintf(str, "%g", val);
+		} else if (jl_isa(var, jl_float64_type)) {
+			double val = jl_unbox_float64(var);
+			sprintf(str, "%g", val);
+		} else {
+			str = "";
+		}
 
 		int len = strlen(str);
 		CACHEEXSTRKILL(result);
