@@ -37,23 +37,14 @@ int Finalize() {
 	return ZF_SUCCESS;
 }
 
-// Execute simple command.
-// Initializes environment if required
-// Does not finalize the environment.
-int SimpleString(CACHE_EXSTRP command, CACHE_EXSTRP result) {
-
+int Execute(char* commandChar, CACHE_EXSTRP result)
+{
 	if (jl_is_initialized() == false) {
 		Initialize(NULL);
 	}
 
-	// Copy command text to a new pointer and add null at the end
-	char* commandChar = malloc(1 + sizeof(char)*command->len);
-	memcpy(commandChar, command->str.ch,  command->len);
-	memcpy(commandChar + command->len, "\0", 1);
-
 	jl_value_t *var = jl_eval_string(commandChar);
 
-	CACHEEXSTRKILL(command);
 	free(commandChar);
 
 	if (var) {
@@ -111,6 +102,23 @@ int SimpleString(CACHE_EXSTRP command, CACHE_EXSTRP result) {
 	return ZF_SUCCESS;
 }
 
+// Execute simple command.
+// Initializes environment if required
+// Does not finalize the environment.
+int SimpleString(CACHE_EXSTRP command, CACHE_EXSTRP result) {
+
+	// Copy command text to a new pointer and add null at the end
+	char* commandChar = malloc(1 + sizeof(char)*command->len);
+	memcpy(commandChar, command->str.ch,  command->len);
+	memcpy(commandChar + command->len, "\0", 1);
+	CACHEEXSTRKILL(command);
+
+	Execute(commandChar, result);
+
+
+	return ZF_SUCCESS;
+}
+
 // Init incoming stream (inStream) to length bytes + 1
 int StreamInit(int length)
 {
@@ -162,20 +170,16 @@ int StreamWrite(CACHE_EXSTRP command)
 }
 
 // Send inStream to Python and free it
-int StreamExecute()
+int StreamExecute(CACHE_EXSTRP result)
 {
-	if (jl_is_initialized() == false) {
-		Initialize(NULL);
-	}
-
 	if (!inStream) {
 		return ZF_FAILURE;
 	}
 
 	memcpy(inStream + curpos, "\0", 1);
 
-	jl_eval_string(inStream);
-	free(inStream);
+	Execute(inStream, result);
+
 	inStream = NULL;
 	curpos = 0;
 
@@ -188,5 +192,5 @@ ZFBEGIN
 	ZFENTRY("SimpleString","jJ",SimpleString)
 	ZFENTRY("StreamInit","i",StreamInit)
 	ZFENTRY("StreamWrite","j",StreamWrite)
-	ZFENTRY("StreamExecute","",StreamExecute)
+	ZFENTRY("StreamExecute","J",StreamExecute)
 ZFEND

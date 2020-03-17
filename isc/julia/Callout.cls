@@ -81,10 +81,10 @@ ClassMethod Initialize(file As %String = "") As %Status
 /// Always check sc. If it's not $$$OK, result is invalid.
 /// If sc is $$$OK result is returned if it's a string, bool, int8, int16, int32, int64, float32, float64 or ASCII char.
 /// write ##class(isc.julia.Callout).SimpleString()
-ClassMethod SimpleString(code As %String = "x=sqrt(2)", Output sc As %Status) As %String
+ClassMethod SimpleString(code As %String = "x=sqrt(2)", Output result As %String) As %Status
 {
+	#dim sc As %Status = $$$OK
 	try {
-		set sc = $$$OK
 		set:$ZISWIDE(code) code = $zcvt(code, "O", "UTF8")
 		set result = $ZF(-6, ..#JuliaLibId, ..#SimpleString, code)
 		
@@ -101,7 +101,7 @@ ClassMethod SimpleString(code As %String = "x=sqrt(2)", Output sc As %Status) As
 		set result = ""
 	}
 	
-	quit result
+	quit sc
 }
 
 /// Init incoming Stream
@@ -146,11 +146,19 @@ ClassMethod StreamWrite(code As %String = "") As %Status
 
 /// Send incoming stream to Julia for execution and free it.
 /// write ##class(isc.julia.Callout).StreamExecute()
-ClassMethod StreamExecute() As %Status
+ClassMethod StreamExecute(Output result As %String) As %Status
 {
-	#dim sc As %Status = $$$OK
+	#dim sc As %Status = $$$OK	
 	try {
-		do $ZF(-6, ..#JuliaLibId, ..#StreamExecute)
+		set result = $ZF(-6, ..#JuliaLibId, ..#StreamExecute)
+		
+		// Slows getting result by ~50%
+		set result = $zcvt(result, "I", "UTF8")
+		
+		if $extract(result, 1, 5) = $c(1,1,1,1,1) {
+			set sc = $$$ERROR($$$GeneralError, $replace($extract(result, 6, *), $c(10), $$$NL))
+			set result = ""
+		} 
 	} catch ex {
 		#dim ex As %Exception.General
 		if (ex.Name = "<FUNCTION>") {
@@ -158,6 +166,7 @@ ClassMethod StreamExecute() As %Status
 		} else {
 			set sc = ex.AsStatus()
 		}
+		set result = ""
 	}
 	
 	quit sc
