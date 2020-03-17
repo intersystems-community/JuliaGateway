@@ -169,7 +169,7 @@ int StreamWrite(CACHE_EXSTRP command)
 	return ZF_SUCCESS;
 }
 
-// Send inStream to Python and free it
+// Send inStream to Julia and free it
 int StreamExecute(CACHE_EXSTRP result)
 {
 	if (!inStream) {
