@@ -95,11 +95,21 @@ int SimpleString(CACHE_EXSTRP command, CACHE_EXSTRP result) {
 			return ZF_FAILURE;
 		}
 		memcpy(result->str.ch, str, len);   // copy to retval->str.ch
+	} else if (jl_exception_occurred()) {
+		const char *str = jl_unbox_voidpointer(jl_eval_string("pointer(sprint(showerror, ccall(:jl_exception_occurred, Any, ())))"));
+		int len = strlen(str);
+
+		CACHEEXSTRKILL(result);
+		if (!CACHEEXSTRNEW(result,len + 5)) {
+			return ZF_FAILURE;
+		}
+		memcpy(result->str.ch, "\x01\x01\x01\x01\x01", 5);
+		memcpy(result->str.ch + 5, str, len);   // copy to retval->str.ch
+
 	}
 
 	return ZF_SUCCESS;
 }
-
 
 // Init incoming stream (inStream) to length bytes + 1
 int StreamInit(int length)

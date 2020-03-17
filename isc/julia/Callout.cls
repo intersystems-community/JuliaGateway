@@ -64,14 +64,8 @@ ClassMethod Setup() As %Status
     quit sc
 }
 
-/// Initializes Python environment. Idempotent.
+/// Initializes Julia environment. Idempotent.
 /// Currently this is done automatically on a C side of things.
-/// file - path to a Python shared library. (Linux only, optional)
-/// Due to the problems with lib-dynload, sometimes library file should be loaded explicitly on Linux
-/// For more info see: https://bugs.python.org/issue4434
-/// Do not use it, unless you get errors like: undefined symbol: _Py_TrueStruct and so on
-/// w ##class(isc.julia.Callout).Initialize()
-/// In cause of problems: do ##class(isc.julia.Callout).Initialize("libpython3.6m.so") 
 ClassMethod Initialize(file As %String = "") As %Status
 {
 	#dim sc As %Status = $$$OK
@@ -83,18 +77,30 @@ ClassMethod Initialize(file As %String = "") As %Status
 	quit sc
 }
 
-/// Eval code vaiable in initialized context and 
-/// return value of variable str evaluation
-/// serialization - currenlty: 0 - string serialization, 1 - repr serialization.
-/// TODO determine wide variable value.
+/// Eval code vaiable in initialized context and return result if possible.
+/// Always check sc. If it's not $$$OK, result is invalid.
+/// If sc is $$$OK result is returned if it's a string, bool, int8, int16, int32, int64, float32, float64 or ASCII char.
 /// write ##class(isc.julia.Callout).SimpleString()
-ClassMethod SimpleString(code As %String = "x=sqrt(2)") As %String
+ClassMethod SimpleString(code As %String = "x=sqrt(2)", Output sc As %Status) As %String
 {
-	set:$ZISWIDE(code) code = $zcvt(code, "O", "UTF8")
-	set result = $ZF(-6, ..#JuliaLibId, ..#SimpleString, code)
+	try {
+		set sc = $$$OK
+		set:$ZISWIDE(code) code = $zcvt(code, "O", "UTF8")
+		set result = $ZF(-6, ..#JuliaLibId, ..#SimpleString, code)
+		
+		// Slows getting result by ~50%
+		set result = $zcvt(result, "I", "UTF8")
+		
+		if $extract(result, 1, 5) = $c(1,1,1,1,1) {
+			set sc = $$$ERROR($$$GeneralError, $replace($extract(result, 6, *), $c(10), $$$NL))
+			set result = ""
+		} 
+	} catch ex {
+		#dim ex As %Exception.AbstractException
+		set sc = ex.AsStatus()
+		set result = ""
+	}
 	
-	// Slows getting result by ~50%
-	set result = $zcvt(result, "I", "UTF8")
 	quit result
 }
 
@@ -138,7 +144,7 @@ ClassMethod StreamWrite(code As %String = "") As %Status
 	quit sc
 }
 
-/// Send incoming stream to Python for execution and free it.
+/// Send incoming stream to Julia for execution and free it.
 /// write ##class(isc.julia.Callout).StreamExecute()
 ClassMethod StreamExecute() As %Status
 {
@@ -170,7 +176,7 @@ ClassMethod Test()
 	write $replace(##class(isc.julia.Callout).SimpleString("string(df)"),$c(10),$c(10,13))
 }
 
-/// Finalize Python. Idempotent.
+/// Finalize Julia. Idempotent.
 /// write ##class(isc.julia.Callout).Finalize()
 ClassMethod Finalize() As %Status
 {
