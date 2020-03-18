@@ -93,6 +93,47 @@ ClassMethod ExecuteQuery(query As %String, variable As %String, type As %String(
 /// set sc = ##class(isc.julia.Main).GetVariable()
 ClassMethod GetVariable(variable As %String, serialization As %String(VALUELIST=",string,json") = "string", ByRef stream As %Stream.Object, useString As %Boolean = {$$$NO}) As %Status
 {
+	#dim sc As %Status = $$$OK
+	set sc = ##class(isc.julia.Main).GetVariableInfo(variable, serialization, .defined, .type, .length)
+	quit:$$$ISERR(sc) sc
+	quit:defined=$$$NO $$$ERROR($$$GeneralError, $$$FormatText("Variable %1 is not defined", variable))
+	
+	set code = $case(serialization, "string": "string(" _ variable _ ")", "json":"JSON.json(" _ variable _ ")")
+	
+	if ((length<=$$$MaxStringLength) && useString) {	
+		set sc = ##class(isc.julia.Callout).SimpleString(code, .stream)
+	} else {
+		set step = $$$MaxStringLength \ 2
+		set:'$isObject($g(stream)) stream = ##class(%Stream.GlobalCharacter).%New()
+		
+		set sc = ##class(isc.julia.Callout).SimpleString("zzzvar = " _ code)
+		
+		if (length<=step) {
+			set sc = ##class(isc.julia.Callout).SimpleString("zzzvar", .zzzvar)
+			do stream.Write(zzzvar)
+		} else {
+			
+			for i=1:step:length {
+				set end = i + step
+				set:end>length end = length
+				set sc = ##class(isc.julia.Callout).SimpleString("zzzvar[" _ i _ ":" _ end _ "]", .zzzvar)
+				quit:$$$ISERR(sc)
+				do stream.Write(zzzvar)
+			}
+		}
+		
+		kill zzzvar
+		
+		// Julia does not have "delete" function
+		// https://docs.julialang.org/en/latest/manual/faq/#How-do-I-delete-an-object-in-memory?-1
+		do ##class(isc.julia.Callout).SimpleString("zzzvar = nothing")
+		
+		quit:$$$ISERR(sc) sc
+		set sc = stream.%Save()
+		do stream.Rewind()
+	}
+	
+	quit sc
 }
 
 /// Get variable metainformation.
@@ -108,17 +149,18 @@ ClassMethod GetVariableInfo(variable As %String = "", serialization As %String(V
 	set type = ""
 	set length = ""
 	
-	set sc = ##class(isc.julia.Main).GetVariableDefined("", .defined)
+	set sc = ##class(isc.julia.Main).GetVariableDefined(variable, .defined)
 	quit:$$$ISERR(sc) sc
 	quit:defined=$$$NO sc
 	
-	set sc = ##class(isc.julia.Main).GetVariableType("", .type)
+	set sc = ##class(isc.julia.Main).GetVariableType(variable, .type)
 	quit:$$$ISERR(sc) sc
 	
 	if serialization="string" {
-		set sc = ##class(isc.julia.Callout).SimpleString("string(" _ variable _ ")", .length)
+		set sc = ##class(isc.julia.Callout).SimpleString("length(string(" _ variable _ "))", .length)
 	} elseif serialization="json" {
-		set sc = ##class(isc.julia.Callout).SimpleString("!!!(" _ variable _ ")", .length)
+		set sc = ..ImportModule("JSON")
+		set sc = ##class(isc.julia.Callout).SimpleString("length(JSON.json(" _ variable _ "))", .length)
 	}
 	
 	quit sc
@@ -143,9 +185,26 @@ ClassMethod GetVariableType(variable As %String = "", Output type As %String) As
 }
 
 /// Import module.
+/// module - module name. Case sensitive
+/// install - attempt installation if not found.
 /// set sc = ##class(isc.julia.Main).ImportModule()
-ClassMethod ImportModule(module As %String) As %Status
+ClassMethod ImportModule(module As %String, install As %Boolean = {$$$NO}) As %Status
 {
+	#dim sc As %Status = $$$OK
+	set sc = ##class(isc.julia.Callout).SimpleString("import " _ module)
+	
+	if (($system.Status.GetErrorText(sc) [ "not found in current path") && (install)) {
+		set sc = ..ImportModule("Pkg")
+		quit:$$$ISERR(sc)
+		
+		set cmd = $lb("open(""nul"", ""w"") do out;", "redirect_stdout(out) do;", "Pkg.add(""" _ module _ """)", "end", "end")
+		set sc = ##class(isc.julia.Callout).SimpleString($lts(cmd, $$$NL), .result)
+		
+		//set sc = ##class(isc.julia.Callout).SimpleString("Pkg.add(""" _ module _ """)", .result)
+		//zw result
+	}
+	
+	quit sc
 }
 
 }

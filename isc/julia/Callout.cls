@@ -94,7 +94,9 @@ ClassMethod SimpleString(code As %String = "x=sqrt(2)", Output result As %String
 		if $extract(result, 1, 5) = $c(1,1,1,1,1) {
 			set sc = $$$ERROR($$$GeneralError, $replace($extract(result, 6, *), $c(10), $$$NL))
 			set result = ""
-		} 
+		} else {
+			set result = $replace(result, $c(10), $$$NL)
+		}
 	} catch ex {
 		#dim ex As %Exception.AbstractException
 		set sc = ex.AsStatus()
