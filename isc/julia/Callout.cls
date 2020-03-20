@@ -180,11 +180,11 @@ ClassMethod Test()
 	//set code = $lts($lb("try", "using DataFrames", "df = DataFrame(A = 1:4, B = 'A':'D')", "catch e", "bt = backtrace()", "msg = sprint(showerror, e, bt)", "end"), $$$NL)
 	//write ##class(isc.julia.Callout).SimpleString(code)
 	
-	write ##class(isc.julia.Callout).SimpleString("x=sqrt(3)")
-	write ##class(isc.julia.Callout).SimpleString("string(x)")
+	write ##class(isc.julia.Callout).SimpleString("x=sqrt(3)", .x)
 	write ##class(isc.julia.Callout).SimpleString("using DataFrames")
 	write ##class(isc.julia.Callout).SimpleString("df = DataFrame(A = 1:4, B = 'A':'D')")
-	write $replace(##class(isc.julia.Callout).SimpleString("string(df)"),$c(10),$c(10,13))
+	set sc = ##class(isc.julia.Main).GetVariable("df", "string", .df, 1)
+	set sc = ##class(isc.julia.Main).GetVariable("df", "json", .df, 1)
 }
 
 /// Finalize Julia. Idempotent.

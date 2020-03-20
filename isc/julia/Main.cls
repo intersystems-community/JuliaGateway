@@ -10,6 +10,15 @@ ClassMethod SimpleString(code As %String, Output result As %String) As %Status [
 ##class(isc.julia.Callout).SimpleString(code, .result)
 }
 
+/// Eval code vaiable in initialized context and return result if possible.
+/// Always check sc. If it's not $$$OK, result is invalid.
+/// If sc is $$$OK result is returned if it's a string, bool, int8, int16, int32, int64, float32, float64 or ASCII char.
+/// write ##class(isc.julia.Main).IOSimpleString()
+ClassMethod IOSimpleString(code As %String, Output result As %String) As %Status [ CodeMode = expression ]
+{
+..SimpleString($lts($lb("open(""nul"", ""w"") do out;", "redirect_stdout(out) do;", code, "end", "end"), $c(10)), .result)
+}
+
 /// Executes code. If variable is not empty sets variable=code.
 /// If variable is undefined just executes the code
 /// code may be a string or a stream
@@ -78,13 +87,125 @@ ClassMethod ExecuteCode(code As %Stream.Object, variable As %String = "", Output
 
 /// Populate variable from sql query
 /// variable - python variable to set
-/// type - variable type (Currently supported: dataframe and list.
+/// type - variable type (Currently supported: dataframe)
 /// query - text of the SQL query
 /// namespace - namespace to execute query in. 'isc.julia' package must be available in this namespace.
-/// DataFrames is imported automatically if required.
-/// set sc = ##class(isc.julia.Main).ExecuteQuery("SELECT * FROM isc_py_test.CannibalizationData", "df")
-ClassMethod ExecuteQuery(query As %String, variable As %String, type As %String(VALUELIST=",dataframe,list") = "list", namespace As %String = {$namespace}) As %Status
+/// CSV, DataFrames is imported automatically if required.
+/// set sc = ##class(isc.julia.Main).ExecuteQuery("SELECT Age, %truncate(Age/2, 4) As Fl, DOB, Name FROM Sample.Person", "df")
+ClassMethod ExecuteQuery(query As %String, variable As %String, type As %String(VALUELIST=",dataframe") = "dataframe", namespace As %String = {$namespace}) As %Status
 {
+	#include %occODBC
+	#dim sc As %Status = $$$OK	
+	quit:",dataframe,"'[type $$$ERROR($$$GeneralError, "Invalid type: " _ $g(type) _ ". Expected types: dataframe or list")
+	
+	set sc = ..ImportModule("CSV")
+	quit:$$$ISERR(sc) sc
+	
+	set sc = ..ImportModule("Dates")
+	quit:$$$ISERR(sc) sc
+
+	new $namespace
+	set oldNamespace = $namespace
+	set $namespace = namespace
+	
+	set st =  ##class(%SQL.Statement).%New()
+	set st.%SelectMode = 1 // ODBC
+	set sc = st.%Prepare(query)
+	quit:$$$ISERR(sc) sc
+	
+	#dim result As %SQL.StatementResult
+	set result = st.%Execute()
+	quit:result.%SQLCODE'=0 $$$ERROR($$$SQLError, result.%SQLCODE, result.%Message)
+
+	#dim metadata As SQL.StatementMetadata
+	set metadata = result.%GetMetadata()
+	set columnCount = metadata.columns.Count()
+	
+	set columnList = ""
+	set typeList = ""
+	for i=1:1:columnCount {
+		#dim column As %SQL.StatementColumn
+		set column = metadata.columns.GetAt(i)
+		
+		if (column.IsNumeric() || (column.ODBCType = $$$ODBCTYPEnumeric)) {
+			set typeList = typeList _ $lb($$$ODBCTYPEnumeric)
+		} elseif (column.ODBCType=$$$ODBCTYPEtimestamp) {
+			set typeList = typeList _ $lb($$$ODBCTYPEtimestamp)
+		} elseif (column.ODBCType=$$$ODBCTYPEdate) {
+			set typeList = typeList _ $lb($$$ODBCTYPEdate)
+		} elseif column.ODBCType = $$$ODBCTYPEtime  {
+			set typeList = typeList _ $lb($$$ODBCTYPEtime)
+		} elseif column.clientType = 16 {
+			// boolean
+			set typeList = typeList _ $lb($$$ODBCTYPEbit)
+		} elseif column.ODBCType = $$$ODBCTYPElongvarchar {
+			set typeList = typeList _ $lb($$$ODBCTYPElongvarchar)
+		} else {
+			set typeList = typeList _ $lb($$$ODBCTYPEvarchar)
+		}
+		
+		set columnList = columnList _ $lb((##class(isc.julia.util.Converter).EscapeString(column.colName)))
+	}
+	
+	set dataStr = ""
+	set data = ##class(%Stream.TmpCharacter).%New()
+	do data.Write("""")
+	
+	while result.%Next() {		
+		set rowList = ""
+		for i=1:1:columnCount {
+			set value = result.%GetData(i)
+			set:$lv(value) value = $lts(value)
+			
+			set colType = $lg(typeList, i)
+			if colType = $$$ODBCTYPEbit {
+				set rowList = rowList _ $lb(##class(isc.julia.util.Converter).BooleanToJulia(value))
+			} elseif colType = $$$ODBCTYPEnumeric {
+				set:value="" value = """"
+				set rowList = rowList _ $lb(value)
+			} elseif colType = $$$ODBCTYPEtimestamp {
+				set rowList = rowList _ $lb($tr(value, " ", "T"))
+			} elseif colType = $$$ODBCTYPEdate {
+				set rowList = rowList _ $lb(value)
+			} elseif colType = $$$ODBCTYPEtime {
+				set rowList = rowList _ $lb(value)
+			} elseif colType = $$$ODBCTYPElongvarchar {
+				set stream = ##class(%Stream.Object).%Open($lfs(value))
+				set rowList = rowList _ $lb(##class(isc.julia.util.Converter).EscapeStringQuoted(stream.Read(1000000)))
+				kill stream
+			} else {
+				set rowList = rowList _ $lb(##class(isc.julia.util.Converter).EscapeStringQuoted(value))
+			}
+		}
+		
+		set dataStr = dataStr _ $lts(rowList, ",") _ "\n"
+		
+		if $l(dataStr)>3000000 {
+			do data.Write(dataStr)
+			set dataStr=""
+		}	
+	}
+	
+	do data.Write(dataStr _ """")
+
+
+	set $namespace = oldNamespace
+
+	set sc = ..ExecuteCode(data, variable)
+	quit:$$$ISERR(sc) sc
+
+	// zzzcolumns = ["col1", "col2", "col3"]
+	set code = "zzzcolumns=[" _ $lts(columnList, ",") _ "]"
+	
+	set sc = ..SimpleString(code)
+	quit:$$$ISERR(sc) sc
+	
+	set sc = ..SimpleString(variable _ "= CSV.read(IOBuffer(" _ variable _ "), header=zzzcolumns)")
+	quit:$$$ISERR(sc) sc
+
+	set sc = ..SimpleString("zzzcolumns = nothing")	
+	
+	quit sc
 }
 
 /// variable - variable name
