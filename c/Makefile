@@ -15,9 +15,9 @@ ifneq (, $(findstring linux, $(SYS)))
          $(error Couldn't find PYTHONVER)
 	endif
 	
-	INCLUDES += $(shell python${PYTHONVER}-config --includes)
-	LDFLAGS += $(shell python${PYTHONVER}-config --ldflags) 
-	LIBS += $(shell python${PYTHONVER}-config --libs)
+	INCLUDES += $(shell julia ${JULIA_HOME}/share/julia/julia-config.jl --cflags)
+	LDFLAGS += $(shell julia ${JULIA_HOME}/share/julia/julia-config.jl --ldflags)
+	LIBS += $(shell julia ${JULIA_HOME}/share/julia/julia-config.jl --ldlibs)
 else ifneq (, $(findstring mingw, $(SYS)))
 	SUFFIX := dll
 	

@@ -5,7 +5,14 @@
 #include <julia.h>
 #include <cdzf.h>
 #include <stdbool.h>
+#include <stdio.h>
 
+#ifdef __linux__
+	#include <dlfcn.h>
+#endif
+
+// Haldle for a library if we want to load it explicitly
+void *libHandle = NULL;
 
 // Pointer to incoming code to execute
 char* inStream = NULL;
@@ -23,6 +30,15 @@ int maxpos = 0;
 // Do not use it, unless you get errors like: undefined symbol: _Py_TrueStruct and so on)
 int Initialize(char *file) {
 	if (jl_is_initialized() == false) {
+		
+		if ((file) && (!libHandle)) {
+			#ifdef __linux__
+				//linux code goes here
+				//http://tldp.org/HOWTO/Program-Library-HOWTO/dl-libraries.html
+				libHandle = dlopen(file, RTLD_LAZY |RTLD_GLOBAL);
+			#endif
+		}
+		
 		jl_init();
 	}
 	return ZF_SUCCESS;
@@ -69,7 +85,7 @@ int Execute(char* commandChar, CACHE_EXSTRP result)
 			sprintf(str, "%d", val);
 		} else if (jl_is_int64(var)) {
 			int64_t val = jl_unbox_int64(var);
-			sprintf(str, "%lld", val);
+			sprintf(str, "%ld", val);
 		} else if (jl_isa(var, jl_float32_type)) {
 			float val = jl_unbox_float32(var);
 			sprintf(str, "%g", val);
