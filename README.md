@@ -71,8 +71,8 @@ docker run -d \
 ```
 set sc = ##class(isc.julia.Callout).Setup() 
 set sc = ##class(isc.julia.Callout).Initialize()
-set sc = ##class(isc.py.Main).SimpleString("sqrt(4)", .result)
+set sc = ##class(isc.julia.Main).SimpleString("sqrt(4)", .result)
 write result
-set sc = ##class(isc.py.Callout).Finalize()
-set sc = ##class(isc.py.Callout).Unload()
+set sc = ##class(isc.julia.Callout).Finalize()
+set sc = ##class(isc.julia.Callout).Unload()
 ```
