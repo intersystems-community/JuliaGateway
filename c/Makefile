@@ -8,12 +8,16 @@ CFLAGS += -Wall -Wextra -fpic -O3 -fno-strict-aliasing -Wno-incompatible-pointer
 
 SYS := $(shell gcc -dumpmachine)
 
+ifndef GLOBALS_HOME
+	$(error Couldn't find GLOBALS_HOME)
+endif
+
+ifndef JULIA_HOME
+	$(error Couldn't find JULIA_HOME)
+endif
+
 ifneq (, $(findstring linux, $(SYS)))
 	SUFFIX := so
-	
-	ifndef PYTHONVER
-         $(error Couldn't find PYTHONVER)
-	endif
 	
 	INCLUDES += $(shell julia ${JULIA_HOME}/share/julia/julia-config.jl --cflags)
 	LDFLAGS += $(shell julia ${JULIA_HOME}/share/julia/julia-config.jl --ldflags)
@@ -21,24 +25,21 @@ ifneq (, $(findstring linux, $(SYS)))
 else ifneq (, $(findstring mingw, $(SYS)))
 	SUFFIX := dll
 	
-	ifndef PYTHONHOME
-         $(error Couldn't find PYTHONHOME)
-	endif
-	
-	#PYTHONVER := $(shell ${PYTHONHOME}/python -c "import sys; print(str(sys.version_info[0])+str(sys.version_info[1]))")
-	
 	INCLUDES += $(shell julia ${JULIA_HOME}\share\julia\julia-config.jl --cflags)
 	LDFLAGS += $(shell julia ${JULIA_HOME}\share\julia\julia-config.jl --ldflags)
 	LIBS  = $(shell julia ${JULIA_HOME}\share\julia\julia-config.jl --ldlibs)
+else ifneq (, $(findstring apple, $(SYS)))
+	SUFFIX := dylib
+
+	INCLUDES += $(shell julia ${JULIA_HOME}/share/julia/julia-config.jl --cflags)
+	LDFLAGS += $(shell julia ${JULIA_HOME}/share/julia/julia-config.jl --ldflags)
+	LIBS  = $(shell julia ${JULIA_HOME}/share/julia/julia-config.jl --ldlibs)
 else 
 	$(error Unsupported build platform)
 endif
 
-ifndef GLOBALS_HOME
-     $(error Couldn't find GLOBALS_HOME)
-endif
-
 INCLUDES += -I${GLOBALS_HOME}/dev/cpp/include
+INCLUDES += -I${GLOBALS_HOME}/dev/iris-callin/include
 CFLAGS += $(INCLUDES)
 
 .PHONY: all clean
