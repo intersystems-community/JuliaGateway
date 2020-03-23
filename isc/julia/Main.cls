@@ -96,7 +96,7 @@ ClassMethod ExecuteQuery(query As %String, variable As %String, type As %String(
 {
 	#include %occODBC
 	#dim sc As %Status = $$$OK	
-	quit:",dataframe,"'[type $$$ERROR($$$GeneralError, "Invalid type: " _ $g(type) _ ". Expected types: dataframe or list")
+	quit:",dataframe,"'[type $$$ERROR($$$GeneralError, "Invalid type: " _ $g(type) _ ". Expected types: dataframe")
 	
 	set sc = ..ImportModule("CSV")
 	quit:$$$ISERR(sc) sc
@@ -148,8 +148,7 @@ ClassMethod ExecuteQuery(query As %String, variable As %String, type As %String(
 	}
 	
 	set dataStr = ""
-	set data = ##class(%Stream.TmpCharacter).%New()
-	do data.Write("""")
+	set sc = ##class(isc.julia.Callout).SimpleString(variable _ " = IOBuffer()")
 	
 	while result.%Next() {		
 		set rowList = ""
@@ -181,26 +180,30 @@ ClassMethod ExecuteQuery(query As %String, variable As %String, type As %String(
 		set dataStr = dataStr _ $lts(rowList, ",") _ "\n"
 		
 		if $l(dataStr)>3000000 {
-			do data.Write(dataStr)
+			set sc = ##class(isc.julia.Callout).SimpleString("write(" _ variable _ ", """ _ dataStr _ """)")
+			quit:$$$ISERR(sc)
 			set dataStr=""
-		}	
+		}
 	}
-	
-	do data.Write(dataStr _ """")
-
-
-	set $namespace = oldNamespace
-
-	set sc = ..ExecuteCode(data, variable)
 	quit:$$$ISERR(sc) sc
-
+	
+	set $namespace = oldNamespace
+	
+	set sc = ##class(isc.julia.Callout).SimpleString("write(" _ variable _ ", """ _ dataStr _ """)")
+	quit:$$$ISERR(sc) sc
+	
+	set sc = ..SimpleString("seek(" _ variable _ ", 0)")
+	quit:$$$ISERR(sc) sc
+	
+	
 	// zzzcolumns = ["col1", "col2", "col3"]
 	set code = "zzzcolumns=[" _ $lts(columnList, ",") _ "]"
 	
 	set sc = ..SimpleString(code)
 	quit:$$$ISERR(sc) sc
 	
-	set sc = ..SimpleString(variable _ "= CSV.read(IOBuffer(" _ variable _ "), header=zzzcolumns)")
+	
+	set sc = ..SimpleString(variable _ "= CSV.read(" _ variable _ ", header=zzzcolumns)")
 	quit:$$$ISERR(sc) sc
 
 	set sc = ..SimpleString("zzzcolumns = nothing")	
