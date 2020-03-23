@@ -11,6 +11,13 @@
 	#include <dlfcn.h>
 #endif
 
+#ifdef _WIN32
+	// 'int64_t {aka long long int}'
+	const char* int64format = "%lld";
+#else
+	const char* int64format = "%ld";
+#endif
+
 // Haldle for a library if we want to load it explicitly
 void *libHandle = NULL;
 
@@ -85,7 +92,7 @@ int Execute(char* commandChar, CACHE_EXSTRP result)
 			sprintf(str, "%d", val);
 		} else if (jl_is_int64(var)) {
 			int64_t val = jl_unbox_int64(var);
-			sprintf(str, "%ld", val);
+			sprintf(str, int64format, val);
 		} else if (jl_isa(var, jl_float32_type)) {
 			float val = jl_unbox_float32(var);
 			sprintf(str, "%g", val);
