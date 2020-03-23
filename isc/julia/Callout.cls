@@ -66,7 +66,7 @@ ClassMethod Setup() As %Status
 
 /// Initializes Julia environment. Idempotent.
 /// Currently this is done automatically on a C side of things.
-ClassMethod Initialize(file As %String = "") As %Status
+ClassMethod Initialize(file As %String = "libjulia.so") As %Status
 {
 	#dim sc As %Status = $$$OK
 	try {
