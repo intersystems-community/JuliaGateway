@@ -1,8 +1,8 @@
-/// Raw callout wrapper. Use isc.py.Main
+/// Raw callout wrapper. Use isc.julia.Main
 /// To use:
 /// 1. Call: do ##class(isc.julia.Callout).Setup() once per systems start
 /// 2. Call main method (can be called many times, context persists): write ##class(isc.julia.Callout).SimpleString(code, variable)
-/// 3. Call: do ##class(isc.julia.Callout).Finalize() to clear Python context
+/// 3. Call: do ##class(isc.julia.Callout).Finalize() to clear Julia context
 /// 4. Call: write ##class(isc.julia.Callout).Unload() to free callout library
 Class isc.julia.Callout
 {

@@ -284,6 +284,7 @@ ClassMethod GetVariableInfo(variable As %String = "", serialization As %String(V
 		set sc = ##class(isc.julia.Callout).SimpleString("length(string(" _ variable _ "))", .length)
 	} elseif serialization="json" {
 		set sc = ..ImportModule("JSON")
+		quit:$$$ISERR(sc) sc
 		set sc = ##class(isc.julia.Callout).SimpleString("length(JSON.json(" _ variable _ "))", .length)
 	}
 	

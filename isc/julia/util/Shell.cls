@@ -16,7 +16,7 @@ ClassMethod Shell()
 			
 			if multi = $$$NO {
 				// enter multi mode if line ends on :
-				//set multi = ($e($zstrip(command,">W"),*)=":")
+				// set multi = ($e($zstrip(command,">W"),*)=":")
 			} elseif command = "" {
 				// leave multi mode
 				set multi = $$$NO
