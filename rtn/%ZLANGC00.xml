@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Export generator="Cache" version="25" zv="Cache for Windows (x86-64) 2017.2 (Build 744U)" ts="2019-03-21 15:56:04">
+<Routine name="%ZLANGC00" type="MAC" languagemode="0" timestamp="65093,57355.900954"><![CDATA[
+ ; %ZLANGC00
+ ; custom commands for ObjectScript
+ ; https://docs.intersystems.com/latest/csp/docbook/DocBook.UI.Page.cls?KEY=GSTU_customize#GSTU_customize_zlang
+  Quit    
+
+ZJ(command) Public
+	if '$d(command) {
+		do ##class(isc.julia.util.Shell).Shell()
+		quit
+	} else {
+		set sc = ##class(isc.julia.Main).SimpleString(command,.result)
+		if (sc) {
+			write result
+		} else {
+			write $System.Status.GetOneStatusText(sc)
+		}
+	}
+	quit
+]]></Routine>
+</Export>
