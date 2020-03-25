@@ -40,6 +40,15 @@ ML Toolkit user group is a private GitHub repository set up as part of InterSyst
 8. Set [LibPath](https://docs.intersystems.com/irislatest/csp/docbook/DocBook.UI.Page.cls?KEY=RACS_LibPath) configuration parameter to the value of `$JULIA_HOME/lib` (if you installed to `/tmp/julia`, set `LibPath=/tmp/julia/lib`).
 9. Restart InterSystems IRIS.
 
+## Post installation (Windows, Mac, Linux)
+
+After installation you'll need these packages. In julia bash run:
+
+```
+import Pkg;
+Pkg.add(["CSV", "DataFrames"])
+using CSV, DataFrames
+```
 
 ## Docker
 
@@ -76,3 +85,16 @@ write result
 set sc = ##class(isc.julia.Callout).Finalize()
 set sc = ##class(isc.julia.Callout).Unload()
 ```
+
+# Test Business process
+
+1. Execute in OS bash:
+```
+import Pkg;
+Pkg.add(["CSV", "DataFrames", "MLJ", "MLJModels", "Statistics", "MultivariateStats", "NearestNeighbors"])
+using CSV, DataFrames, MLJ, MLJModels, Statistics, MultivariateStats, NearestNeighbors
+```
+
+2. In InterSystems IRIS terminal execute: `write ##class(isc.julia.test.AMES).Import()` to load the dataset.
+3. Start `isc.julia.test.Production` production.
+4. Send empty `Ens.Request` message to the `isc.julia.test.Process`.
