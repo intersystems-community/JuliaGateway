@@ -160,7 +160,6 @@ ClassMethod ExecuteQuery(query As %String, variable As %String, type As %String(
 			if colType = $$$ODBCTYPEbit {
 				set rowList = rowList _ $lb(##class(isc.julia.util.Converter).BooleanToJulia(value))
 			} elseif colType = $$$ODBCTYPEnumeric {
-				set:value="" value = """"
 				set rowList = rowList _ $lb(value)
 			} elseif colType = $$$ODBCTYPEtimestamp {
 				set rowList = rowList _ $lb($tr(value, " ", "T"))
@@ -188,7 +187,7 @@ ClassMethod ExecuteQuery(query As %String, variable As %String, type As %String(
 	quit:$$$ISERR(sc) sc
 	
 	set $namespace = oldNamespace
-	
+	zw dataStr
 	set sc = ##class(isc.julia.Callout).SimpleString("write(" _ variable _ ", """ _ dataStr _ """)")
 	quit:$$$ISERR(sc) sc
 	
@@ -316,7 +315,7 @@ ClassMethod GetVariableType(variable As %String = "", Output type As %String) As
 ClassMethod ImportModule(module As %String, install As %Boolean = {$$$NO}) As %Status
 {
 	#dim sc As %Status = $$$OK
-	set sc = ##class(isc.julia.Callout).SimpleString("import " _ module)
+	set sc = ##class(isc.julia.Callout).SimpleString("using " _ module)
 	
 	if (($system.Status.GetErrorText(sc) [ "not found in current path") && (install)) {
 		set sc = ..ImportModule("Pkg")

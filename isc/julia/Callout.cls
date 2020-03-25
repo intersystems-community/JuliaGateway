@@ -7,12 +7,6 @@
 Class isc.julia.Callout
 {
 
-/// Serialization by str() function
-Parameter SerializationStr = 0;
-
-/// Serialization by repr() function
-Parameter SerializationRepr = 1;
-
 Parameter JuliaLibId As Integer = 4938;
 
 Parameter Initialize As Integer = 1;
