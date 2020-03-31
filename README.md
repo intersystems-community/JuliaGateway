@@ -43,7 +43,7 @@ After installation you'll need these packages. In julia bash run:
 
 ```
 import Pkg;
-Pkg.add(["CSV", "DataFrames"])
+Pkg.add(["JSON", "CSV", "DataFrames"])
 using CSV, DataFrames
 ```
 
@@ -88,10 +88,55 @@ set sc = ##class(isc.julia.Callout).Unload()
 1. Execute in OS bash:
 ```
 import Pkg;
-Pkg.add(["CSV", "DataFrames", "MLJ", "MLJModels", "Statistics", "MultivariateStats", "NearestNeighbors"])
+Pkg.add(["JSON", "CSV", "DataFrames", "MLJ", "MLJModels", "Statistics", "MultivariateStats", "NearestNeighbors"])
 using CSV, DataFrames, MLJ, MLJModels, Statistics, MultivariateStats, NearestNeighbors
 ```
 
 2. In InterSystems IRIS terminal execute: `write ##class(isc.julia.test.AMES).Import()` to load the dataset.
 3. Start `isc.julia.test.Production` production.
 4. Send empty `Ens.Request` message to the `isc.julia.test.Process`.
+
+# Terminal API
+
+Generally the main interface to Julia is `isc.julia.Main`. It offers these methods (all return `%Status`), which can be separated into three categories:
+- Code execution
+- Data transfer
+- Auxiliary
+
+## Code execution
+
+These methods allow execution of arbitrary Julia code:
+
+- `ImportModule(module)` -  import module.
+- `SimpleString(code, .result)` - execute `code` for cases where both `code` and `result` are less than `$$$MaxStringLength` in length.
+- `ExecuteCode(code, variable, .result)` - execute `code` (it may be a stream or string), optionally set code into `variable`.
+
+## Data Transfer
+
+Transfer data into and from Julia.
+
+### Julia -> InterSystems IRIS
+
+- `GetVariable(variable, serialization, .stream, useString)` - get `serialization` of `variable` in `stream`. If `useString` is 1 and variable serialization can fit into string then string is returned instead of the stream.
+
+### InterSystems IRIS -> Julia
+
+- `ExecuteQuery(query, variable, type, namespace)` - create `DataFrame` from sql `query` and set it into `variable`. `isc.julia` package must be available in `namespace` (Available `type` is `DataFrame`).
+
+## Auxiliary
+
+Support methods.
+
+- `GetVariableInfo(variable, serialization, .defined, .type, .length)` - get info about variable: is it defined, type and serialized length.
+- `GetVariableDefined(variable, .defined)` - is variable defined.
+- `GetVariableType(variable, .type)` - get variable FQCN.
+
+Possible Serializations:
+- `string` - Serialization by string() function
+- `json` - Serialization by `JSON` module
+
+# Shell
+
+To open Julia shell: `do ##class(isc.julia.util.Shell).Shell()`. To exit press enter.
+
+In `rtn` folder `zj` command example is also available. Import into `%SYS` namespace.
