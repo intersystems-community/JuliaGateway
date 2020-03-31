@@ -44,7 +44,7 @@ After installation you'll need these packages. In julia bash run:
 ```
 import Pkg;
 Pkg.add(["JSON", "CSV", "DataFrames"])
-using CSV, DataFrames
+using JSON, CSV, DataFrames
 ```
 
 ## Docker
@@ -148,7 +148,7 @@ Settings:
 ```
 import Pkg;
 Pkg.add(["JSON", "CSV", "DataFrames", "MLJ", "MLJModels", "Statistics", "MultivariateStats", "NearestNeighbors"])
-using CSV, DataFrames, MLJ, MLJModels, Statistics, MultivariateStats, NearestNeighbors
+using JSON, CSV, DataFrames, MLJ, MLJModels, Statistics, MultivariateStats, NearestNeighbors
 ```
 
 2. In InterSystems IRIS terminal execute: `write ##class(isc.julia.test.AMES).Import()` to load the dataset.
