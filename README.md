@@ -132,7 +132,7 @@ Support methods.
 - `GetVariableType(variable, .type)` - get variable FQCN.
 
 Possible Serializations:
-- `string` - Serialization by string() function
+- `string` - Serialization by `string()` function
 - `json` - Serialization by `JSON` module
 
 # Shell
@@ -140,3 +140,94 @@ Possible Serializations:
 To open Julia shell: `do ##class(isc.julia.util.Shell).Shell()`. To exit press enter.
 
 In `rtn` folder `zj` command example is also available. Import into `%SYS` namespace.
+
+# Interoperability adapter
+
+Interoperability adapter `isc.julia.ens.Operation` offers ability to interact with Julia process from Interoperability productions. Currently three requests are supported:
+
+- Execute Julia code via `isc.julia.msg.ExecutionRequest`. Returns `isc.julia.msg.ExecutionResponse` with requested variable values
+- Execute Julia code via `isc.julia.msg.StreamExecutionRequest`. Returns `isc.julia.msg.StreamExecutionResponse` with requested variable values. Same as above, but accepts and returns streams instead of strings.
+- Set dataset from SQL Query with `isc.julia.msg.QueryRequest`. Returns `Ens.Response`.
+
+
+Check request/response classes documentation for details.
+
+Settings:
+ - `Initializer` - select a class implementing `isc.julia.init.Abstract`. It can be used to load functions, modules, classes and so on. It would be executed at process start.
+
+## Variable substitution
+
+All business processes inheriting from `isc.julia.ens.ProcessUtils` can use `GetAnnotation(name)` method to get value of activity annotation by activity name. Activity annotation can contain variables which would be calculated on ObjectScript side before being passed to Julia. This is the syntax for variable substitution:
+
+- `${class:method:arg1:...:argN}` - execute method
+- `#{expr}` - execute ObjectScript code
+
+Example: `save(r'#{process.WorkDirectory}SHOWCASE${%PopulateUtils:Integer:1:100}.png')`
+
+In this example:
+- `#{process.WorkDirectory}` returns WorkDirectory property of `process` object which is an instance of the current business process.
+- `${%PopulateUtils:Integer:1:100}` calls `Integer` method of `%PopulateUtils` class passing arguments `1` and `100`, returning random integer in range `1...100`.
+
+# Unit tests
+
+To run tests execute:
+
+```
+set repo = ##class(%SourceControl.Git.Utils).TempFolder()
+set ^UnitTestRoot = ##class(%File).SubDirectoryName(##class(%File).SubDirectoryName(##class(%File).SubDirectoryName(repo,"isc"),"julia"),"unit",1)
+set sc = ##class(%UnitTest.Manager).RunTest(,"/nodelete")
+```
+
+# ZLANGC00
+
+Install ZLANG routine from `rtn` folder to add `zj` command:
+
+```
+zj "sqrt(2)"
+zj
+```
+
+Argumentless `zpy` command opens Julia shell.
+
+# Limitations
+
+There are several limitations associated with the use of JuliaGateway.
+
+1. `Pkg` is not supported on Windows.
+2. Variables. Do not use these variables: `zzz*` variables. Please report any leakage of these variables. System code should always clear them.
+3. Functions  Do not redefine `zzz*()` functions.
+
+# Development
+
+Development of ObjectScript is done via [cache-tort-git](https://github.com/MakarovS96/cache-tort-git) in UDL mode. 
+Development of C code is done in Eclipse.
+
+# Commits
+
+Commits should follow the pattern: `moule: description issue`. List of modules:
+
+- Callout - C and ObjectScript callout interface in `isc.julia.Callout`.
+- API - terminal API, mainly `isc.julia.Main`.
+- Interoperability - support utilities for Interoperability Business Processes.
+- Tests - unit tests and test production.
+- Docker - containers.
+- Docs - documentation.
+
+# Building
+
+## Windows
+
+1. Install [MinGW-w64](https://sourceforge.net/projects/mingw-w64/) you'll need `make` and `gcc`. 
+2. Rename `mingw32-make.exe` to `make.exe` in `mingw64\bin` directory.
+3. Set `GLOBALS_HOME` environment variable to the root of InterSystems IRIS installation.
+4. Set `JULIA_HOME` environment variable to the root of Julia installation.
+5. Open MinGW bash (`mingw64env.cmd` or `mingw-w64.bat`).
+6. In `<Repository>\c\` execute `make`.
+
+## Linux / Mac
+
+1. Install Julia.
+2. Install: `apt install build-essential` (for Mac install gcc compiler and make).
+3. Set `GLOBALS_HOME` environment variable to the root of InterSystems IRIS installation.
+4. Set `JULIA_HOME` environment variable to the root of Julia installation.
+5. In `<Repository>/c/` execute `make`.
