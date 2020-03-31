@@ -1,4 +1,5 @@
 /// Sample process
+/// 
 /// Adapted from https://alan-turing-institute.github.io/MLJTutorials/end-to-end/AMES/
 Class isc.julia.test.Process Extends (Ens.BusinessProcessBPL, isc.julia.ens.ProcessUtils) [ DependsOn = isc.julia.ens.ProcessUtils ]
 {

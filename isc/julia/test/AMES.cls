@@ -13,7 +13,10 @@
 /// https://www.kaggle.com/c/house-prices-advanced-regression-techniques/overview
 /// https://github.com/alan-turing-institute/MLJBase.jl/blob/master/data/reduced_ames.csv
 /// 
-/// Run: w ##class(isc.julia.test.AMES).Import() to load the dataset
+/// Test BP
+/// 1. Run: w ##class(isc.julia.test.AMES).Import() to load the dataset
+/// 2. UPDATE isc_julia_test.AMES SET PricePredict = NULL
+/// 3. SELECT  *, ABS(Price-PricePredict)/Price FROM isc_julia_test.AMES
 Class isc.julia.test.AMES Extends (%Persistent, %XML.Adaptor, isc.julia.util.Storage)
 {
 
