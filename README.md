@@ -83,19 +83,6 @@ set sc = ##class(isc.julia.Callout).Finalize()
 set sc = ##class(isc.julia.Callout).Unload()
 ```
 
-# Test Business process
-
-1. Execute in OS bash:
-```
-import Pkg;
-Pkg.add(["JSON", "CSV", "DataFrames", "MLJ", "MLJModels", "Statistics", "MultivariateStats", "NearestNeighbors"])
-using CSV, DataFrames, MLJ, MLJModels, Statistics, MultivariateStats, NearestNeighbors
-```
-
-2. In InterSystems IRIS terminal execute: `write ##class(isc.julia.test.AMES).Import()` to load the dataset.
-3. Start `isc.julia.test.Production` production.
-4. Send empty `Ens.Request` message to the `isc.julia.test.Process`.
-
 # Terminal API
 
 Generally the main interface to Julia is `isc.julia.Main`. It offers these methods (all return `%Status`), which can be separated into three categories:
@@ -154,6 +141,20 @@ Check request/response classes documentation for details.
 
 Settings:
  - `Initializer` - select a class implementing `isc.julia.init.Abstract`. It can be used to load functions, modules, classes and so on. It would be executed at process start.
+ 
+# Test Business process
+
+1. Execute in OS bash:
+```
+import Pkg;
+Pkg.add(["JSON", "CSV", "DataFrames", "MLJ", "MLJModels", "Statistics", "MultivariateStats", "NearestNeighbors"])
+using CSV, DataFrames, MLJ, MLJModels, Statistics, MultivariateStats, NearestNeighbors
+```
+
+2. In InterSystems IRIS terminal execute: `write ##class(isc.julia.test.AMES).Import()` to load the dataset.
+3. Start `isc.julia.test.Production` production.
+4. Send empty `Ens.Request` message to the `isc.julia.test.Process`.
+
 
 ## Variable substitution
 
