@@ -5,7 +5,7 @@
 SYSTEM
 	try {
 		new $namespace 
-		set $namespace = "JULIA"
+		set $namespace = "USER"
 		do ##class(isc.julia.Callout).Setup()
 		set $namespace = "%SYS"
 	} catch ex {
@@ -17,8 +17,8 @@ SYSTEM
 LOGIN  
 	try {
 		new $namespace 
-		set $namespace = "JULIA"
-		//do ##class(isc.julia.Callout).Initialize("libjulia.so")
+		set $namespace = "USER"
+		do ##class(isc.julia.Callout).Initialize("libjulia.so")
 	} catch ex {
 		zn "%SYS"
 		do ex.Log()
