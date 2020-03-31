@@ -188,7 +188,7 @@ zj "sqrt(2)"
 zj
 ```
 
-Argumentless `zpy` command opens Julia shell.
+Argumentless `zj` command opens Julia shell.
 
 # Limitations
 
