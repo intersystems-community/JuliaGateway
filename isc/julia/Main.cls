@@ -10,13 +10,13 @@ ClassMethod SimpleString(code As %String, Output result As %String) As %Status [
 ##class(isc.julia.Callout).SimpleString(code, .result)
 }
 
-/// Eval code vaiable in initialized context and return result if possible.
+/// Eval code vaiable in initialized context with disabled STDIO and return result if possible.
 /// Always check sc. If it's not $$$OK, result is invalid.
 /// If sc is $$$OK result is returned if it's a string, bool, int8, int16, int32, int64, float32, float64 or ASCII char.
 /// write ##class(isc.julia.Main).IOSimpleString()
 ClassMethod IOSimpleString(code As %String, Output result As %String) As %Status [ CodeMode = expression ]
 {
-..SimpleString($lts($lb("open(""nul"", ""w"") do out;", "redirect_stdout(out) do;", code, "end", "end"), $c(10)), .result)
+..SimpleString($lts($lb("zzzstdout = stdout", "redirect_stdout(open(""nul"", ""w"")", code, "redirect_stdout(zzzstdout)"), $c(10)), .result)
 }
 
 /// Executes code. If variable is not empty sets variable=code.
