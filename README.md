@@ -62,7 +62,7 @@ ML Toolkit user group is a private GitHub repository set up as part of InterSyst
 
 ## Post installation (Windows, Mac, Linux)
 
-After installation you'll need these packages. In julia bash run:
+After installation you'll need these packages. In OS bash run:
 
 ```
 import Pkg;
@@ -169,9 +169,7 @@ Settings:
 
 1. Execute in OS bash:
 ```
-import Pkg;
-Pkg.add(["JSON", "CSV", "DataFrames", "MLJ", "MLJModels", "Statistics", "MultivariateStats", "NearestNeighbors"])
-using JSON, CSV, DataFrames, MLJ, MLJModels, Statistics, MultivariateStats, NearestNeighbors
+julia <repo-dir>\install.jl
 ```
 
 2. In InterSystems IRIS terminal execute: `write ##class(isc.julia.test.AMES).Import()` to load the dataset.
