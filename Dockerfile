@@ -9,6 +9,10 @@ ENV PATH $JULIA_PATH/bin:$PATH
 # Because we need TimeZone module
 ENV TZ UTC
 
+# Julia dependencies
+# install Julia packages here
+ENV JULIA_PKGDIR=$JULIA_PATH/packages
+
 # https://julialang.org/downloads/
 ENV JULIA_VERSION 1.4.0
 
@@ -16,6 +20,7 @@ RUN dpkgArch="$(dpkg --print-architecture)"; \
     folder="$(echo "$JULIA_VERSION" | cut -d. -f1-2)"; \
     wget --no-verbose -O julia.tar.gz "https://julialang-s3.julialang.org/bin/linux/x64/${folder}/julia-${JULIA_VERSION}-linux-x86_64.tar.gz"; \
     mkdir "$JULIA_PATH"; \
+    mkdir "$JULIA_PKGDIR"; \
     tar -xzf julia.tar.gz --directory="$JULIA_PATH" --strip-components=1; \
     chown -hR $ISC_PACKAGE_IRISUSER:$ISC_PACKAGE_IRISGROUP $JULIA_PATH; \
     rm julia.tar.gz; \
@@ -32,8 +37,9 @@ ENV SRC_DIR=/home/$ISC_PACKAGE_MGRUSER
 COPY --chown=$ISC_PACKAGE_MGRUSER:$ISC_PACKAGE_IRISGROUP ./isc/ $SRC_DIR/isc
 COPY --chown=$ISC_PACKAGE_MGRUSER:$ISC_PACKAGE_IRISGROUP ./rtn/ $SRC_DIR/rtn
 COPY --chown=$ISC_PACKAGE_MGRUSER:$ISC_PACKAGE_IRISGROUP iscjulia.so $ISC_PACKAGE_INSTALLDIR/bin/
+COPY --chown=$ISC_PACKAGE_MGRUSER:$ISC_PACKAGE_IRISGROUP install.jl $SRC_DIR/jl/
 
-RUN julia -e 'using Pkg; Pkg.add(["JSON", "CSV", "DataFrames", "MLJ", "MLJModels", "Statistics", "MultivariateStats", "NearestNeighbors"]); using CSV, DataFrames, MLJ, MLJModels, Statistics, MultivariateStats, NearestNeighbors; exit()'
+RUN julia $SRC_DIR/jl/install.jl
 
 RUN iris start $ISC_PACKAGE_INSTANCENAME && \
     /bin/echo -e "zn \"USER\"" \
@@ -61,6 +67,6 @@ RUN iris start $ISC_PACKAGE_INSTANCENAME && \
   && rm -f $ISC_PACKAGE_INSTALLDIR/mgr/alerts.log \
   && rm -f $ISC_PACKAGE_INSTALLDIR/mgr/journal/* \
   && rm -f $ISC_PACKAGE_INSTALLDIR/mgr/messages.log \
-  && rm -rf $SRC_DIR/isc $SRC_DIR/rtn
+  && rm -rf $SRC_DIR/isc $SRC_DIR/rtn $SRC_DIR/jl
 
 HEALTHCHECK --interval=5s CMD /irisHealth.sh || exit 1
