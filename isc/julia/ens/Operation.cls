@@ -14,6 +14,8 @@ Parameter SETTINGS = "Initializer:Basic:selector?context={isc.julia.ens.ContextS
 Method OnInit() As %Status
 {
 	#dim sc As %Status = $$$OK
+	set sc = ##class(isc.julia.Callout).Setup()
+	quit:$$$ISERR(sc) sc
 	set sc = ##class(isc.julia.Callout).Initialize()
 	quit:$$$ISERR(sc) sc
 	
