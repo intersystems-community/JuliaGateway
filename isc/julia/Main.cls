@@ -202,7 +202,7 @@ ClassMethod ExecuteQuery(query As %String, variable As %String, type As %String(
 	quit:$$$ISERR(sc) sc
 	
 	
-	set sc = ..SimpleString(variable _ "= CSV.read(" _ variable _ ", header=zzzcolumns)")
+	set sc = ..SimpleString(variable _ "= CSV.read(" _ variable _ ", copycols=true, header=zzzcolumns)")
 	quit:$$$ISERR(sc) sc
 
 	set sc = ..SimpleString("zzzcolumns = nothing")	
