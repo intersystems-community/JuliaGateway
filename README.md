@@ -69,7 +69,7 @@ docker run -d \
 # Use
 
 1. Call: `set sc = ##class(isc.julia.Callout).Setup()` once per systems start (add to ZSTART: [docs](https://docs.intersystems.com/latest/csp/docbook/DocBook.UI.Page.cls?KEY=GSTU_customize#GSTU_customize_startstop), sample routine available in `rtn` folder).
-2. Initialize julia once per process start: `set sc = ##class(isc.julia.Callout).Initialize()`
+2. Initialize Julia once per process start: `set sc = ##class(isc.julia.Callout).Initialize()`
 2. Call main method (can be called many times, context persists): `write ##class(isc.julia.Main).SimpleString(code, .result)`
 3. Call: `set sc = ##class(isc.julia.Callout).Finalize()` to free Julia context.
 4. Call: `set sc = ##class(isc.julia.Callout).Unload()` to free callout library.
