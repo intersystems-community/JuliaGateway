@@ -203,7 +203,7 @@ Development of C code is done in Eclipse.
 
 # Commits
 
-Commits should follow the pattern: `moule: description issue`. List of modules:
+Commits should follow the pattern: `module: description issue`. List of modules:
 
 - Callout - C and ObjectScript callout interface in `isc.julia.Callout`.
 - API - terminal API, mainly `isc.julia.Main`.
