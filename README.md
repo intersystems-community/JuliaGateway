@@ -51,7 +51,7 @@ using JSON, CSV, DataFrames
 
 1. To build docker image:
   - Copy `iscjulia.so` into repository root (if it's not there already)
-  - Execute in the repository root `docker build --force-rm --tag intersystemscommunity/irisjulia:latest .` By default the image is built upon `store/intersystems/iris-community:2019.4.0.383.0` image, however you can change that by providing `IMAGE` variable. To build from InterSystems IRIS execute: `docker build  --build-arg IMAGE=store/intersystems/iris:2019.4.0.383.0 --force-rm --tag intersystemscommunity/irisjulia:latest .`
+  - Execute in the repository root `docker build --force-rm --tag intersystemsdc/irisjulia:latest .` By default the image is built upon `store/intersystems/iris-community:2019.4.0.383.0` image, however you can change that by providing `IMAGE` variable. To build from InterSystems IRIS execute: `docker build  --build-arg IMAGE=store/intersystems/iris:2019.4.0.383.0 --force-rm --tag intersystemsdc/irisjulia:latest .`
 2. To run docker image execute (key is not needed for Community based images): 
 
 ```
@@ -59,7 +59,7 @@ docker run -d \
   -p 52773:52773 \
   -v /<HOST-DIR-WITH-iris.key>/:/mount \
   --name iris \
-  intersystemscommunity/irisjulia:latest \
+  intersystemsdc/irisjulia:latest \
   --key /mount/iris.key \
 ```
 3. For terminal access execute: `docker exec -it iris iris session iris`.
